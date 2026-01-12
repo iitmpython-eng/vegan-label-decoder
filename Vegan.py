@@ -1,22 +1,38 @@
 import streamlit as st
+import google.generativeai as genai
+import PIL.Image
 
-st.title("🕵️ Key Detective")
+# --- 1. DIRECT KEY SETUP (Temporary) ---
+# Paste your key inside the quotes below. 
+# WARNING: Do not keep this here forever! It is just for testing.
+api_key = "AIzaSy_PASTE_YOUR_FULL_KEY_HERE" 
 
-# Check if the secret exists
-if "GOOGLE_API_KEY" in st.secrets:
-    st.success("✅ SUCCESS: The app found the key in Secrets!")
+st.set_page_config(page_title="Vegan Label Decoder", page_icon="🌱")
+
+if api_key == "AIzaSy_PASTE_YOUR_FULL_KEY_HERE":
+    st.error("❌ You forgot to paste your actual key in the code!")
+    st.stop()
+
+# Configure Gemini
+try:
+    genai.configure(api_key=api_key)
+    # Test the key immediately
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    response = model.generate_content("Reply with 'System Operational'")
+    st.success(f"✅ Key is Working! AI says: {response.text}")
+except Exception as e:
+    st.error(f"❌ Key is Invalid: {e}")
+    st.stop()
+
+# --- 2. THE APP LOGIC ---
+st.title("🌱 Vegan Decoder (Direct Mode)")
+uploaded_file = st.file_uploader("Upload label", type=["jpg", "png"])
+
+if uploaded_file:
+    image = PIL.Image.open(uploaded_file)
+    st.image(image, caption="Your Snap", width=300)
     
-    # Check if the key looks valid (simple check)
-    key = st.secrets["GOOGLE_API_KEY"]
-    if key.startswith("AIza"):
-        st.write("Looks like a valid Google Key (starts with AIza).")
-    else:
-        st.error(f"⚠️ Key found, but it looks wrong. It starts with: '{key[:4]}...'")
-        
-else:
-    st.error("❌ FAILURE: The app cannot find 'GOOGLE_API_KEY' in Secrets.")
-    st.info("Check your spelling in the Secrets box. It must be GOOGLE_API_KEY")
-
-st.write("---")
-st.write("Once you see the ✅ SUCCESS message, paste your real Vegan App code back.")
-
+    if st.button("Scan Now"):
+        prompt = "Is this vegan? Answer yes/no and why."
+        response = model.generate_content([prompt, image])
+        st.write(response.text)
